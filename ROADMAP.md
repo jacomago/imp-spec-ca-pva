@@ -170,6 +170,19 @@ Principles:
   interop is a separate, non-blocking job allowed to be flaky.
 - **Pin and record implementation versions** in every report; differential
   results are only meaningful against known versions.
+- **Two testing layers, two tools.** Conformance comparison is *not* an xUnit
+  job — its output is a 3-valued matrix where byte-mismatches are catalogued
+  degrees of freedom, not failures. So:
+  - **`pytest`** runs conventional unit/fixture tests (normal-form round-trips,
+    schema validation, adapter round-trips) and a thin *gating* layer that reads
+    the engine's results and asserts the subset that must hold (e.g. a promoted
+    adapter must semantic-match the whole corpus).
+  - a **pure-Python conformance engine** (the consumer above) owns the matrix:
+    it reads artifacts, computes both verdicts, and emits JSON results + the
+    static report. It is decoupled from pass/fail so reporting never breaks
+    because a test failed.
+  - Fixtures stay **hand-authored from the spec hex** — no auto-snapshot tools
+    (`syrupy` et al.), which would let an implementation's output define truth.
 
 The report headlines **disagreements**: a matrix of corpus-case ×
 implementation × {semantic-match, byte-identical, fail}, with divergences
