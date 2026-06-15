@@ -72,10 +72,35 @@ The two verdicts per comparison are kept separate:
 ## Phases
 
 ### Phase 0 — Skeleton + ground truth
-- Repo skeleton; the normal-form sub-spec (contract #2).
-- Encode the spec's hex examples as golden fixtures (timeStamp_t, the 243-byte
-  structure, Status, BitSet). These anchor every later adjudication.
-- One CA adapter, proving the adapter contract end to end.
+Split into three sequentially-mergeable parts. 0a is a prerequisite for 0b and
+0c; 0b and 0c are independent of each other.
+
+Locked decisions: harness/consumer is pure Python (no EPICS deps); the first CA
+adapter is pyepics/libca, containerized with EPICS base; no CI fan-out or Pages
+yet (that is Phase 1).
+
+**0a — Repo skeleton + normal-form sub-spec (contract #2).**
+- Repo scaffolding (pure-Python `pyproject.toml`, package layout, README stub).
+- The normal-form sub-spec: f64 hazard (int64/uint64 and out-of-±2^53 values as
+  strings), explicit NaN/±inf, typed scalars (type+width+signedness), and
+  empty-array vs empty-string vs null kept distinct; bytes as hex.
+- JSON Schemas (normal form + the adapter stdin/stdout I/O contract) and the
+  shared `harness/` library (`normalform.py`, `io.py`).
+
+**0b — Golden fixtures (ground truth).**
+- Encode the spec's authoritative hex examples as golden fixtures (timeStamp_t,
+  the 243-byte structure, Status, BitSet), each pairing the exact spec hex with
+  a hand-verified normal-form decoding and a cited source. These anchor every
+  later adjudication.
+
+**0c — One CA adapter (pyepics/libca, containerized).**
+- An offline DBR `serialize`/`deserialize` adapter proving the adapter contract
+  end to end. libca exposes no offline codec, so the adapter mirrors EPICS base
+  `dbr.h` struct layouts via `ctypes` (no network); pyepics pins the EPICS base
+  version in the provenance record.
+- Dockerfile (EPICS base + pyepics, pinned versions); a small set of
+  hand-verified CA DBR byte anchors + a seed corpus (0b's PVA fixtures do not
+  apply to CA). Fills in the README "how to add an adapter" section.
 
 ### Phase 1 — CA differential harness (the pipeline shakedown)
 CA data is static (DBR), so this is "Kaitai + diff" and is where you get the
