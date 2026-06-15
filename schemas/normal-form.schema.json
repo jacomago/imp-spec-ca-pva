@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jacomago/imp-spec-ca-pva/schemas/normal-form.schema.json",
+  "title": "Normal-form document (contract #2)",
+  "description": "A decoded value tree in canonical normal form: a type tree plus a value tree. This schema validates SHAPE only; the type<->value conformance check lives in harness.normalform.validate.",
+  "type": "object",
+  "required": ["schema_version", "type", "value"],
+  "properties": {
+    "schema_version": { "const": "0a" },
+    "type": { "$ref": "#/$defs/typeNode" },
+    "value": { "$ref": "#/$defs/valueNode" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "typeNode": {
+      "type": "object",
+      "required": ["kind"],
+      "oneOf": [
+        { "$ref": "#/$defs/scalar" },
+        { "$ref": "#/$defs/array" },
+        { "$ref": "#/$defs/struct" },
+        { "$ref": "#/$defs/union" },
+        { "$ref": "#/$defs/variant" }
+      ]
+    },
+    "scalar": {
+      "type": "object",
+      "required": ["kind", "type"],
+      "properties": {
+        "kind": { "const": "scalar" },
+        "type": { "enum": ["int", "float", "string", "boolean"] },
+        "width": { "type": "integer" },
+        "signed": { "type": "boolean" }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "int" } } },
+          "then": {
+            "required": ["width", "signed"],
+            "properties": { "width": { "enum": [8, 16, 32, 64] } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "float" } } },
+          "then": {
+            "required": ["width"],
+            "not": { "required": ["signed"] },
+            "properties": { "width": { "enum": [32, 64] } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "enum": ["string", "boolean"] } } },
+          "then": { "not": { "anyOf": [{ "required": ["width"] }, { "required": ["signed"] }] } }
+        }
+      ]
+    },
+    "array": {
+      "type": "object",
+      "required": ["kind", "element"],
+      "properties": {
+        "kind": { "const": "array" },
+        "element": { "$ref": "#/$defs/typeNode" },
+        "bound": { "type": ["integer", "null"], "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "struct": {
+      "type": "object",
+      "required": ["kind", "fields"],
+      "properties": {
+        "kind": { "const": "struct" },
+        "id": { "type": "string" },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "type"],
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "$ref": "#/$defs/typeNode" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "union": {
+      "comment": "Forward-compatible for PVA (Phase 3); the 0a value walker does not implement union values.",
+      "type": "object",
+      "required": ["kind", "members"],
+      "properties": {
+        "kind": { "const": "union" },
+        "id": { "type": "string" },
+        "members": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "type"],
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "$ref": "#/$defs/typeNode" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "variant": {
+      "comment": "Forward-compatible for PVA (Phase 3); a runtime-typed any.",
+      "type": "object",
+      "required": ["kind"],
+      "properties": { "kind": { "const": "variant" } },
+      "additionalProperties": false
+    },
+    "valueNode": {
+      "comment": "Permissive: a JSON-ready value tree (number, string, boolean, null, array, object). Conformance to the type tree is enforced in Python, not here.",
+      "type": ["number", "string", "boolean", "null", "array", "object"]
+    }
+  }
+}
