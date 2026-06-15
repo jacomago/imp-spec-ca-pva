@@ -23,6 +23,24 @@ Serialized bytes are **not** part of the normal form. They are recorded as a hex
 string in the adapter artifact / fixture envelope (see
 [`schemas/adapter-io.schema.json`](../schemas/adapter-io.schema.json)).
 
+## CA and PVA both land here
+
+The normal form is protocol-agnostic on purpose — it is the common target for
+both EPICS protocols, which have different data models:
+
+- **Channel Access (CA)** carries the fixed **DBR** types
+  (`DBR_STRING/SHORT/FLOAT/ENUM/CHAR/LONG/DOUBLE`). These map onto the
+  `scalar` (and `array`) part of the type tree — e.g. `DBR_LONG` →
+  `{kind:"scalar", type:"int", width:32, signed:true}`, `DBR_DOUBLE` →
+  `{type:"float", width:64}`. The exact mapping for `DBR_ENUM` and the DBR
+  metadata (status/severity/timestamp) fields is fixed alongside the CA adapter
+  in Phase 0c.
+- **pvAccess (PVA)** carries **pvData**, whose `FieldDesc` grammar exercises the
+  full type tree, including `struct`, `union`, `variant`, and bounded arrays.
+
+Because both decode into the same `{type, value}` document, an adapter for
+either protocol is interchangeable to the rest of the harness.
+
 ## Type tree (`TypeNode`)
 
 Every node carries a `kind`:
@@ -129,3 +147,9 @@ Downstream comparisons keep two verdicts separate (see the roadmap):
 - **byte-identical** — serializations equal. Computed over the artifact's
   `bytes_hex`, *not* over the normal form. A failure here is often a legitimate
   degree of freedom and is catalogued, not treated as a hard failure.
+
+## Sources
+
+- [Channel Access Protocol Specification](https://docs.epics-controls.org/en/latest/internal/ca_protocol.html) — DBR types.
+- [pvAccess Data Encoding](https://docs.epics-controls.org/en/latest/pv-access/Protocol-Encoding.html) — Size, scalars, `FieldDesc`, value codec (pvData layers 0–2).
+- [EPICS V4 Normative Types](https://docs.epics-controls.org/en/latest/pv-access/Normative-Types-Specification.html) — conventional structure shapes (e.g. `timeStamp_t`).
