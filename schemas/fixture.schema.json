@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jacomago/imp-spec-ca-pva/schemas/fixture.schema.json",
+  "title": "Golden fixture (oracle v1, Phase 0b)",
+  "description": "A spec-authoritative worked example: exact spec hex paired with a HAND-VERIFIED decoding and a citation. Fixtures are authored from the spec hex, never auto-snapshotted from an implementation. This schema validates SHAPE; deep type<->value conformance of an embedded normal-form document is checked in harness.normalform.validate.",
+  "type": "object",
+  "required": ["case_id", "protocol", "byte_order", "source", "segments", "decoded"],
+  "additionalProperties": false,
+  "properties": {
+    "case_id": { "type": "string", "pattern": "^[a-z0-9]+(\\.[a-z0-9_]+)+$" },
+    "protocol": { "enum": ["pva", "ca"] },
+    "byte_order": { "enum": ["little", "big"] },
+    "source": {
+      "type": "object",
+      "required": ["spec", "url", "section"],
+      "additionalProperties": false,
+      "properties": {
+        "spec": { "type": "string" },
+        "url": { "type": "string", "format": "uri" },
+        "section": { "type": "string" },
+        "note": { "type": "string" }
+      }
+    },
+    "segments": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "description": "The exact spec bytes. PVA serializes type (FieldDesc) and value separately, and BitSet/Status are compact meta-encodings; a fixture records whichever segments the example provides. Hex may contain spaces for readability (the spec groups bytes); harness.golden canonicalizes.",
+      "properties": {
+        "introspection_bytes_hex": { "$ref": "#/$defs/hex" },
+        "value_bytes_hex": { "$ref": "#/$defs/hex" },
+        "meta_bytes_hex": { "$ref": "#/$defs/hex" }
+      }
+    },
+    "decoded": {
+      "description": "The hand-verified truth, in one of three shapes.",
+      "oneOf": [
+        { "$ref": "#/$defs/introspectionDecoded" },
+        { "$ref": "#/$defs/documentDecoded" },
+        { "$ref": "#/$defs/metaDecoded" }
+      ]
+    }
+  },
+  "$defs": {
+    "hex": { "type": "string", "pattern": "^[0-9a-fA-F ]*$" },
+    "introspectionDecoded": {
+      "comment": "Introspection-only example: anchors a type tree (no value).",
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": { "type": { "type": "object" } }
+    },
+    "documentDecoded": {
+      "comment": "A complete normal-form document (value or full message). Conformance checked in Python.",
+      "type": "object",
+      "required": ["schema_version", "type", "value"],
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": { "const": "0a" },
+        "type": { "type": "object" },
+        "value": true
+      }
+    },
+    "metaDecoded": {
+      "comment": "A PVA meta-encoding (BitSet/Status) with no first-class normal-form node yet.",
+      "type": "object",
+      "required": ["meta"],
+      "additionalProperties": false,
+      "properties": {
+        "meta": {
+          "type": "object",
+          "required": ["kind"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "enum": ["bitset", "status"] },
+            "indices": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+            "type": { "enum": ["OK", "WARNING", "ERROR", "FATAL"] },
+            "message": { "type": "string" },
+            "call_tree": { "type": "string" }
+          },
+          "allOf": [
+            {
+              "if": { "properties": { "kind": { "const": "bitset" } } },
+              "then": { "required": ["indices"] }
+            },
+            {
+              "if": { "properties": { "kind": { "const": "status" } } },
+              "then": { "required": ["type", "message", "call_tree"] }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

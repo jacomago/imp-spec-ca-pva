@@ -1,0 +1,13 @@
+{
+  "case_id": "pva.status.warning",
+  "protocol": "pva",
+  "byte_order": "little",
+  "source": {
+    "spec": "pvAccess Data Encoding",
+    "url": "https://docs.epics-controls.org/en/latest/pv-access/Protocol-Encoding.html",
+    "section": "Status encoding — WARNING with message",
+    "note": "Type byte 0x01 (WARNING), then String message Size 0x0A = \"Low memory\", then String call tree Size 0x00 (empty). StatusType: OK=0, WARNING=1, ERROR=2, FATAL=3."
+  },
+  "segments": { "meta_bytes_hex": "01 0A 4C 6F 77 20 6D 65 6D 6F 72 79 00" },
+  "decoded": { "meta": { "kind": "status", "type": "WARNING", "message": "Low memory", "call_tree": "" } }
+}

@@ -1,0 +1,13 @@
+{
+  "case_id": "pva.bitset.bit7",
+  "protocol": "pva",
+  "byte_order": "little",
+  "source": {
+    "spec": "pvAccess Data Encoding",
+    "url": "https://docs.epics-controls.org/en/latest/pv-access/Protocol-Encoding.html",
+    "section": "BitSet encoding — { 7 }",
+    "note": "Size 1, byte 0x80 = bit 7 (the high bit of the first byte) set."
+  },
+  "segments": { "meta_bytes_hex": "01 80" },
+  "decoded": { "meta": { "kind": "bitset", "indices": [7] } }
+}
