@@ -89,11 +89,18 @@ yet (that is Phase 1).
 - JSON Schemas (normal form + the adapter stdin/stdout I/O contract) and the
   shared `harness/` library (`normalform.py`, `io.py`).
 
-**0b — Golden fixtures (ground truth).  ⬜**
-- Encode the spec's authoritative hex examples as golden fixtures (timeStamp_t,
-  the 243-byte structure, Status, BitSet), each pairing the exact spec hex with
-  a hand-verified normal-form decoding and a cited source. These anchor every
-  later adjudication.
+**0b — Golden fixtures (ground truth).  ✅ Done.**
+- Encode the spec's authoritative hex examples as golden fixtures, each pairing
+  the exact spec hex with a hand-verified decoding and a cited source. These
+  anchor every later adjudication (oracle v1).
+- Fixture envelope (`schemas/fixture.schema.json`), loader (`harness/golden.py`),
+  and sub-spec (`docs/fixtures.md`). Shipped PVA fixtures: the 57-byte
+  `timeStamp_t` `FieldDesc`, the BitSet set (∅/{0}/{1}/{7}/{0,1,2,4}), and
+  Status OK/WARNING.
+- Deferred (truncated with `…` in the published spec, need byte-exact
+  transcription from the primary-source PDF): the 243-byte `exampleStructure`
+  `FieldDesc`, the 264-byte Status ERROR example, and the user-data value
+  example. Tracked in `docs/fixtures.md`.
 
 **0c — One CA adapter (pyepics/libca, containerized).  ⬜**
 - An offline DBR `serialize`/`deserialize` adapter proving the adapter contract

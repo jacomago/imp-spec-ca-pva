@@ -52,11 +52,21 @@ Everything plugs into three stable contracts:
 ## Layout
 
 ```
-src/harness/      pure-Python library (normalform.py, io.py)
-schemas/          JSON Schemas: normal form + adapter I/O contract
-docs/             sub-specs (normal-form.md)
-tests/            pytest: round-trips, schema validation, I/O loop
+src/harness/      pure-Python library (normalform.py, io.py, golden.py)
+schemas/          JSON Schemas: normal form + adapter I/O + golden fixtures
+fixtures/         golden fixtures — spec hex + hand-verified decoding (oracle v1)
+docs/             sub-specs (normal-form.md, fixtures.md)
+tests/            pytest: round-trips, schema validation, I/O loop, fixtures
 ```
+
+## Ground truth
+
+[`fixtures/`](fixtures/) holds **golden fixtures**: EPICS spec hex examples each
+paired with a hand-verified decoding and a citation. They are the adjudicator
+(oracle v1) that turns "implementations disagree" into "the spec says X," and
+are authored from the spec hex — never snapshotted from an implementation. See
+[`docs/fixtures.md`](docs/fixtures.md). CA fixtures arrive with the CA adapter
+(Phase 0c).
 
 ## Install & test
 
