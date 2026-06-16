@@ -1,0 +1,19 @@
+{
+  "case_id": "ca.dbr.long",
+  "protocol": "ca",
+  "byte_order": "big",
+  "source": {
+    "spec": "Channel Access Protocol Specification",
+    "url": "https://docs.epics-controls.org/en/latest/internal/ca_protocol.html",
+    "section": "DBR data types — DBR_LONG (dbr_long_t)",
+    "note": "dbr_long_t is epicsInt32 (signed 32-bit). Value 305419896 = 0x12345678. Layout per epics-base modules/ca/src/client/db_access.h. Hand-authored anchor, machine-verified against real EPICS in 0c-3."
+  },
+  "segments": {
+    "value_bytes_hex": "12 34 56 78"
+  },
+  "decoded": {
+    "schema_version": "0a",
+    "type": { "kind": "scalar", "type": "int", "width": 32, "signed": true },
+    "value": 305419896
+  }
+}

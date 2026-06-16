@@ -1,0 +1,26 @@
+{
+  "case_id": "ca.dbr_sts.enum",
+  "protocol": "ca",
+  "byte_order": "big",
+  "source": {
+    "spec": "Channel Access Protocol Specification",
+    "url": "https://docs.epics-controls.org/en/latest/internal/ca_protocol.html",
+    "section": "DBR data types — DBR_STS_ENUM (struct dbr_sts_enum)",
+    "note": "Layout: status (i16), severity (i16), value (dbr_enum_t u16, raw index). No RISC_pad. status=1, severity=2, value=3. Per epics-base modules/ca/src/client/db_access.h. Hand-authored anchor, machine-verified against real EPICS in 0c-3."
+  },
+  "segments": {
+    "value_bytes_hex": "00 01 00 02 00 03"
+  },
+  "decoded": {
+    "schema_version": "0a",
+    "type": {
+      "kind": "struct",
+      "fields": [
+        { "name": "status", "type": { "kind": "scalar", "type": "int", "width": 16, "signed": true } },
+        { "name": "severity", "type": { "kind": "scalar", "type": "int", "width": 16, "signed": true } },
+        { "name": "value", "type": { "kind": "scalar", "type": "int", "width": 16, "signed": false } }
+      ]
+    },
+    "value": { "status": 1, "severity": 2, "value": 3 }
+  }
+}

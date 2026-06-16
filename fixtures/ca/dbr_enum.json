@@ -1,0 +1,19 @@
+{
+  "case_id": "ca.dbr.enum",
+  "protocol": "ca",
+  "byte_order": "big",
+  "source": {
+    "spec": "Channel Access Protocol Specification",
+    "url": "https://docs.epics-controls.org/en/latest/internal/ca_protocol.html",
+    "section": "DBR data types — DBR_ENUM (dbr_enum_t)",
+    "note": "dbr_enum_t is epicsUInt16 (unsigned 16-bit). DBR_ENUM decodes to the RAW enum index, not a label; the label strings need DBR_GR/DBR_CTRL metadata (out of scope). Index 3 = 0x0003. Layout per epics-base modules/ca/src/client/db_access.h. Hand-authored anchor, machine-verified against real EPICS in 0c-3."
+  },
+  "segments": {
+    "value_bytes_hex": "00 03"
+  },
+  "decoded": {
+    "schema_version": "0a",
+    "type": { "kind": "scalar", "type": "int", "width": 16, "signed": false },
+    "value": 3
+  }
+}

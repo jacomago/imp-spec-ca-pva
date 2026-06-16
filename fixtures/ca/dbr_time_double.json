@@ -1,0 +1,30 @@
+{
+  "case_id": "ca.dbr_time.double",
+  "protocol": "ca",
+  "byte_order": "big",
+  "source": {
+    "spec": "Channel Access Protocol Specification",
+    "url": "https://docs.epics-controls.org/en/latest/internal/ca_protocol.html",
+    "section": "DBR data types — DBR_TIME_DOUBLE (struct dbr_time_double)",
+    "note": "Layout: status (i16), severity (i16), stamp ({secPastEpoch u32, nsec u32}), RISC_pad (dbr_long_t, 4 bytes), value (dbr_double_t f64). The 4-byte RISC_pad aligns the f64 to an 8-byte boundary and is wire-only. EPICS epoch 1990-01-01. stamp = {0x3B9ACA00, 0x1DCD6500}, pad=0x00000000, value=1.5=0x3FF8000000000000. Per epics-base modules/ca/src/client/db_access.h. Hand-authored anchor, machine-verified against real EPICS in 0c-3."
+  },
+  "segments": {
+    "value_bytes_hex": "00 01 00 02 3B 9A CA 00 1D CD 65 00 00 00 00 00 3F F8 00 00 00 00 00 00"
+  },
+  "decoded": {
+    "schema_version": "0a",
+    "type": {
+      "kind": "struct",
+      "fields": [
+        { "name": "status", "type": { "kind": "scalar", "type": "int", "width": 16, "signed": true } },
+        { "name": "severity", "type": { "kind": "scalar", "type": "int", "width": 16, "signed": true } },
+        { "name": "stamp", "type": { "kind": "struct", "fields": [
+          { "name": "secPastEpoch", "type": { "kind": "scalar", "type": "int", "width": 32, "signed": false } },
+          { "name": "nsec", "type": { "kind": "scalar", "type": "int", "width": 32, "signed": false } }
+        ] } },
+        { "name": "value", "type": { "kind": "scalar", "type": "float", "width": 64 } }
+      ]
+    },
+    "value": { "status": 1, "severity": 2, "stamp": { "secPastEpoch": 1000000000, "nsec": 500000000 }, "value": 1.5 }
+  }
+}

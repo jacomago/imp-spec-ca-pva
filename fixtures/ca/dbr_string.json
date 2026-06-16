@@ -1,0 +1,19 @@
+{
+  "case_id": "ca.dbr.string",
+  "protocol": "ca",
+  "byte_order": "big",
+  "source": {
+    "spec": "Channel Access Protocol Specification",
+    "url": "https://docs.epics-controls.org/en/latest/internal/ca_protocol.html",
+    "section": "DBR data types — DBR_STRING (dbr_string_t)",
+    "note": "dbr_string_t is epicsOldString = char[40], a fixed 40-byte NUL-padded buffer (MAX_STRING_SIZE=40). The value tree holds the decoded string; trailing NUL padding is a byte-identical degree of freedom. Layout per epics-base modules/ca/src/client/db_access.h. Hand-authored anchor (CA publishes no spec hex), machine-verified against real EPICS in 0c-3."
+  },
+  "segments": {
+    "value_bytes_hex": "48 65 6C 6C 6F 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00"
+  },
+  "decoded": {
+    "schema_version": "0a",
+    "type": { "kind": "scalar", "type": "string" },
+    "value": "Hello"
+  }
+}

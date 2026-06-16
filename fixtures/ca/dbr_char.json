@@ -1,0 +1,19 @@
+{
+  "case_id": "ca.dbr.char",
+  "protocol": "ca",
+  "byte_order": "big",
+  "source": {
+    "spec": "Channel Access Protocol Specification",
+    "url": "https://docs.epics-controls.org/en/latest/internal/ca_protocol.html",
+    "section": "DBR data types — DBR_CHAR (dbr_char_t)",
+    "note": "dbr_char_t is epicsUInt8 (UNSIGNED 8-bit). Value 65 = 0x41. Layout per epics-base modules/ca/src/client/db_access.h. Hand-authored anchor, machine-verified against real EPICS in 0c-3."
+  },
+  "segments": {
+    "value_bytes_hex": "41"
+  },
+  "decoded": {
+    "schema_version": "0a",
+    "type": { "kind": "scalar", "type": "int", "width": 8, "signed": false },
+    "value": 65
+  }
+}
