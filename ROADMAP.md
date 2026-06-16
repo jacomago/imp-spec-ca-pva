@@ -74,13 +74,12 @@ The two verdicts per comparison are kept separate:
 Status legend: ✅ done · 🚧 in progress · ⬜ not started
 
 ### Phase 0 — Skeleton + ground truth  (🚧 in progress)
-Split into three sequentially-mergeable parts. 0a is a prerequisite for 0b and
-0c; 0b and 0c are independent of each other. 0c itself subdivides into three
-further parts (0c-1…0c-3, below).
+Three sequentially-mergeable parts: 0a (a prerequisite for both), then 0b and 0c,
+which are independent of each other. 0c is itself split into 0c-1…0c-3 (below).
 
 Locked decisions: harness/consumer is pure Python (no EPICS deps); the first CA
-adapter is pyepics/libca, containerized with EPICS base; no CI fan-out or Pages
-yet (that is Phase 1).
+adapter is pyepics/libca, containerized with EPICS base + pyepics from conda-forge;
+no CI fan-out or Pages yet (that is Phase 1).
 
 **0a — Repo skeleton + normal-form sub-spec (contract #2).  ✅ Done (PR #1).**
 - Repo scaffolding (pure-Python `pyproject.toml`, package layout, README stub).
@@ -90,7 +89,7 @@ yet (that is Phase 1).
 - JSON Schemas (normal form + the adapter stdin/stdout I/O contract) and the
   shared `harness/` library (`normalform.py`, `io.py`).
 
-**0b — Golden fixtures (ground truth).  ✅ Done.**
+**0b — Golden fixtures (ground truth).  ✅ Done (PR #2).**
 - Encode the spec's authoritative hex examples as golden fixtures, each pairing
   the exact spec hex with a hand-verified decoding and a cited source. These
   anchor every later adjudication (oracle v1).
@@ -117,7 +116,8 @@ prerequisite for 0c-2, and 0c-3 depends on 0c-2.
   fields). Add the hand-verified CA DBR byte anchors as golden fixtures under
   `fixtures/ca/` (`documentDecoded` shape, `protocol:"ca"`, `byte_order:"big"`).
   No schema or `normalform` change is needed — the existing `tests/test_golden.py`
-  covers them in CI. This is CA oracle v1 and unblocks the adapter.
+  covers them in CI. This extends the golden-fixture oracle (v1) to CA and unblocks
+  the adapter.
 - **0c-2 — CA DBR offline codec adapter.  ⬜** The first concrete adapter, under
   `adapters/ca/`: `ctypes.BigEndianStructure` mirrors of `dbr.h` (including the
   explicit `RISC_pad` fields), a bijective DBR-code ↔ normal-form `TypeNode`
