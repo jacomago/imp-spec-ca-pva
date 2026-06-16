@@ -50,7 +50,7 @@ Every node carries a `kind`:
 | `scalar` | `{ "kind":"scalar", "type":"int\|float\|string\|boolean", "width":…, "signed":… }` | `width`+`signed` are required for `int` (width ∈ 8/16/32/64); `float` carries `width` ∈ 32/64 and no `signed`; `string`/`boolean` carry neither. |
 | `array` | `{ "kind":"array", "element":<TypeNode>, "bound":null\|int }` | `bound` null = variable length; an integer reserves PVA fixed/bounded arrays. |
 | `struct` | `{ "kind":"struct", "id"?:"…", "fields":[ {"name":…, "type":<TypeNode>}, … ] }` | **Field order is significant** and preserved everywhere. |
-| `union`, `variant` | reserved | Present in the schema grammar for PVA (Phase 3). The 0a value walker does **not** implement union/variant values yet. |
+| `union`, `variant` | reserved | Present in the schema grammar for PVA (Phase 3). The `0a` Python implementation does **not** model them: `type_from_json` rejects them and there is no value walker, so a document using one passes JSON Schema but fails `harness.normalform`. Implementing union/variant is the [pre-Phase-3 prerequisite](../ROADMAP.md#phase-3--pva-data-harness-the-hard-corpus-work) and will bump `schema_version` past `0a`. |
 
 Tagging type explicitly (type + width + signedness) is deliberate: plain JSON
 blurs `int` vs `long` vs `uint`, and the harness needs those distinctions to
