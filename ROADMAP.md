@@ -102,13 +102,13 @@ no CI fan-out or Pages yet (that is Phase 1).
   `FieldDesc`, the 264-byte Status ERROR example, and the user-data value
   example. Tracked in `docs/fixtures.md`.
 
-**0c — One CA adapter (pyepics/libca, containerized).  ⬜**
+**0c — One CA adapter (pyepics/libca, containerized).  🚧**
 Proves the adapter contract end to end on CA's static DBR data. libca exposes no
 offline codec, so the adapter mirrors EPICS base `dbr.h` struct layouts via
 `ctypes` (no network). Split into three sequentially-mergeable parts: 0c-1 is a
 prerequisite for 0c-2, and 0c-3 depends on 0c-2.
 
-- **0c-1 — CA-DBR → normal-form mapping + CA golden fixtures.  ⬜** Pure Python,
+- **0c-1 — CA-DBR → normal-form mapping + CA golden fixtures.  ✅** Pure Python,
   no EPICS. Pin the CA-DBR → type-tree mapping in `docs/normal-form.md`: the seven
   base types (incl. `DBR_ENUM` → the raw enum index) and the `DBR_STS_*` /
   `DBR_TIME_*` metadata variants (status/severity/timestamp as struct fields; the

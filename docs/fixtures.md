@@ -105,9 +105,40 @@ matching `FieldDesc` and a careful hand-walk before it can be a trustworthy
 anchor. Add these once transcribed byte-for-byte from the official pvAccess
 specification PDF.
 
+## Current fixtures (CA)
+
+CA fixtures are full normal-form **documents** (`documentDecoded`), each pairing
+the DBR struct bytes (`value_bytes_hex`, `protocol:"ca"`, `byte_order:"big"`)
+with its decoded `{type, value}`. They cover the full DBR matrix — the seven base
+types plus their `DBR_STS_*` and `DBR_TIME_*` metadata variants — per
+[the CA-DBR mapping](normal-form.md#the-ca-dbr-mapping):
+
+- `ca.dbr.{string,short,float,enum,char,long,double}` — the seven base types.
+- `ca.dbr_sts.{…}` — the status variants (`struct {status, severity, value}`).
+- `ca.dbr_time.{…}` — the time variants (adds a nested `stamp` sub-struct).
+
+`DBR_INT` / `DBR_TIME_INT` are exact code aliases of `DBR_SHORT` / `DBR_TIME_SHORT`
+(identical bytes and tree), noted in the mapping rather than duplicated as
+byte-identical fixtures.
+
+### How CA anchors are authored (no published spec hex)
+
+Unlike the pvAccess encoding page, the CA spec prints **no hex worked-examples**.
+So these anchors are hand-constructed from the normative `dbr.h` struct layout
+(`epics-base` `modules/ca/src/client/db_access.h`): big-endian, with `RISC_pad`
+alignment bytes as zeros and strings as fixed 40-byte NUL-padded buffers. Every
+DBR struct is naturally aligned by its explicit `RISC_pad` members, so an anchor
+is a straight concatenation of its fields. The hex↔decoding link is machine-
+verified against real EPICS in **Phase 0c-3** (the containerized adapter must
+reproduce every fixture); until then it is hand-verified and cited, exactly as
+the golden-fixture model intends.
+
 ## Sources
 
 - [pvAccess Data Encoding](https://docs.epics-controls.org/en/latest/pv-access/Protocol-Encoding.html)
   — Size, scalars, `FieldDesc` type codes, BitSet, Status.
 - [EPICS V4 Normative Types](https://docs.epics-controls.org/en/latest/pv-access/Normative-Types-Specification.html)
   — `timeStamp_t` and other conventional shapes.
+- [Channel Access Protocol Specification](https://docs.epics-controls.org/en/latest/internal/ca_protocol.html)
+  — DBR types; the `dbr.h` struct layouts are in `epics-base`
+  `modules/ca/src/client/db_access.h`.

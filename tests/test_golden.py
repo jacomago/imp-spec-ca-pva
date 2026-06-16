@@ -82,6 +82,35 @@ def test_timestamp_fixture_is_57_bytes():
     assert len(fx.segment_bytes("introspection_bytes_hex")) == 57
 
 
+# Expected DBR-struct byte sizes (the bare struct, big-endian, including any
+# RISC_pad alignment bytes), per epics-base modules/ca/src/client/db_access.h.
+# A cheap guard against a hand-transcription slip in a CA fixture's bytes before
+# the 0c-3 containerized adapter machine-checks them against real EPICS.
+CA_DBR_BYTE_SIZES = {
+    "ca.dbr.string": 40, "ca.dbr.short": 2, "ca.dbr.float": 4, "ca.dbr.enum": 2,
+    "ca.dbr.char": 1, "ca.dbr.long": 4, "ca.dbr.double": 8,
+    "ca.dbr_sts.string": 44, "ca.dbr_sts.short": 6, "ca.dbr_sts.float": 8,
+    "ca.dbr_sts.enum": 6, "ca.dbr_sts.char": 6, "ca.dbr_sts.long": 8,
+    "ca.dbr_sts.double": 16,
+    "ca.dbr_time.string": 52, "ca.dbr_time.short": 16, "ca.dbr_time.float": 16,
+    "ca.dbr_time.enum": 16, "ca.dbr_time.char": 16, "ca.dbr_time.long": 16,
+    "ca.dbr_time.double": 24,
+}
+
+
+def test_ca_fixture_set_is_the_full_dbr_matrix():
+    ca_ids = {fx.case_id for fx in FIXTURES if fx.protocol == "ca"}
+    assert ca_ids == set(CA_DBR_BYTE_SIZES), "CA fixtures must be the full DBR matrix"
+
+
+@pytest.mark.parametrize(
+    "fx", [fx for fx in FIXTURES if fx.protocol == "ca"], ids=_id
+)
+def test_ca_dbr_byte_length(fx: golden.Fixture):
+    # Guards the hand-authored DBR struct bytes against an off-by-N slip.
+    assert len(fx.segment_bytes("value_bytes_hex")) == CA_DBR_BYTE_SIZES[fx.case_id]
+
+
 def test_bitset_decodings_match_bytes():
     # Independent check of the BitSet little-endian bit layout against the hand
     # decoding: byte (i // 8), bit (i % 8).

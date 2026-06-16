@@ -1,0 +1,19 @@
+{
+  "case_id": "ca.dbr.double",
+  "protocol": "ca",
+  "byte_order": "big",
+  "source": {
+    "spec": "Channel Access Protocol Specification",
+    "url": "https://docs.epics-controls.org/en/latest/internal/ca_protocol.html",
+    "section": "DBR data types — DBR_DOUBLE (dbr_double_t)",
+    "note": "dbr_double_t is epicsFloat64 (IEEE-754 binary64). Value 1.5 = 0x3FF8000000000000. Layout per epics-base modules/ca/src/client/db_access.h. Hand-authored anchor, machine-verified against real EPICS in 0c-3."
+  },
+  "segments": {
+    "value_bytes_hex": "3F F8 00 00 00 00 00 00"
+  },
+  "decoded": {
+    "schema_version": "0a",
+    "type": { "kind": "scalar", "type": "float", "width": 64 },
+    "value": 1.5
+  }
+}

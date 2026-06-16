@@ -29,17 +29,78 @@ The normal form is protocol-agnostic on purpose — it is the common target for
 both EPICS protocols, which have different data models:
 
 - **Channel Access (CA)** carries the fixed **DBR** types
-  (`DBR_STRING/SHORT/FLOAT/ENUM/CHAR/LONG/DOUBLE`). These map onto the
-  `scalar` (and `array`) part of the type tree — e.g. `DBR_LONG` →
-  `{kind:"scalar", type:"int", width:32, signed:true}`, `DBR_DOUBLE` →
-  `{type:"float", width:64}`. The exact mapping for `DBR_ENUM` and the DBR
-  metadata (status/severity/timestamp) fields is fixed alongside the CA adapter
-  in Phase 0c.
+  (`DBR_STRING/SHORT/FLOAT/ENUM/CHAR/LONG/DOUBLE`) and their `DBR_STS_*` /
+  `DBR_TIME_*` metadata variants. These map onto the `scalar` and `struct` parts
+  of the type tree — pinned in [The CA-DBR mapping](#the-ca-dbr-mapping) below.
 - **pvAccess (PVA)** carries **pvData**, whose `FieldDesc` grammar exercises the
   full type tree, including `struct`, `union`, `variant`, and bounded arrays.
 
 Because both decode into the same `{type, value}` document, an adapter for
 either protocol is interchangeable to the rest of the harness.
+
+## The CA-DBR mapping
+
+CA's data is the static **DBR** family. There is no self-describing wire grammar
+(no `FieldDesc`): the structure is fixed by the request type and known a priori.
+This section pins the DBR → `TypeNode` mapping; the layouts are EPICS base's
+`dbr.h` structs (`epics-base` `modules/ca/src/client/db_access.h`), serialized
+**big-endian** (CA = network byte order). It is anchored by the golden fixtures
+under [`fixtures/ca/`](../fixtures) (see [fixtures.md](fixtures.md)).
+
+### Base DBR types → `scalar`
+
+| DBR (code) | C typedef | `TypeNode` |
+|------------|-----------|------------|
+| `DBR_STRING` (0) | `epicsOldString` = `char[40]` | `{scalar, string}` |
+| `DBR_SHORT` / `DBR_INT` (1) | `epicsInt16` | `{scalar, int, width 16, signed}` |
+| `DBR_FLOAT` (2) | `epicsFloat32` | `{scalar, float, width 32}` |
+| `DBR_ENUM` (3) | `epicsUInt16` | `{scalar, int, width 16, unsigned}` — the **raw enum index** |
+| `DBR_CHAR` (4) | `epicsUInt8` | `{scalar, int, width 8, unsigned}` |
+| `DBR_LONG` (5) | `epicsInt32` | `{scalar, int, width 32, signed}` |
+| `DBR_DOUBLE` (6) | `epicsFloat64` | `{scalar, float, width 64}` |
+
+- `DBR_ENUM` decodes to the **raw index**, not a label string. Resolving labels
+  needs the `DBR_GR`/`DBR_CTRL` enum-string metadata, which is out of scope here.
+- `DBR_CHAR` is **unsigned** 8-bit (`epicsUInt8`).
+- `DBR_STRING` is a fixed 40-byte (`MAX_STRING_SIZE`) NUL-padded buffer on the
+  wire. The value tree holds the decoded string; the trailing NUL padding is a
+  byte-identical degree of freedom, not value-tree content.
+
+### `DBR_STS_*` (7–13) → `struct {status, severity, value}`
+
+The status variants prepend alarm metadata. `status` and `severity` are
+`dbr_short_t` (`int16`, signed) and are first-class value-tree fields:
+
+```
+{ kind:"struct", fields:[ {status: i16}, {severity: i16}, {value: <base type>} ] }
+```
+
+### `DBR_TIME_*` (14–20) → `struct {status, severity, stamp, value}`
+
+The time variants additionally carry an `epicsTimeStamp`, modelled as a nested
+`stamp` sub-struct of two `uint32` fields:
+
+```
+{ kind:"struct", fields:[
+    {status: i16}, {severity: i16},
+    {stamp: { kind:"struct", fields:[ {secPastEpoch: u32}, {nsec: u32} ] }},
+    {value: <base type>} ] }
+```
+
+CA timestamps count from the **EPICS epoch (1990-01-01)**, not the Unix epoch.
+
+### `RISC_pad` and CA framing are byte-identical degrees of freedom
+
+Several DBR structs carry `RISC_pad` alignment bytes that align the value to its
+natural boundary — `dbr_sts_char` (1 byte), `dbr_sts_double` (4), `dbr_time_short`
+/ `dbr_time_enum` (2), `dbr_time_char` (2 + 1), `dbr_time_double` (4). These bytes
+are recorded in the fixture's `value_bytes_hex` (so the **byte-identical** verdict
+sees them) but are **not** value-tree fields (so the **semantic** verdict ignores
+them). They are a byte-identical degree of freedom, like the string's NUL padding.
+
+The anchors are the **bare DBR struct bytes** — no CA message header and no
+message-frame padding-to-8. That framing is a transport concern handled outside
+the offline codec, and is itself a byte-identical degree of freedom.
 
 ## Type tree (`TypeNode`)
 
