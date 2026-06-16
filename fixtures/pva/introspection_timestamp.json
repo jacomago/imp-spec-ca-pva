@@ -1,0 +1,25 @@
+{
+  "case_id": "pva.introspection.timestamp",
+  "protocol": "pva",
+  "byte_order": "little",
+  "source": {
+    "spec": "pvAccess Data Encoding",
+    "url": "https://docs.epics-controls.org/en/latest/pv-access/Protocol-Encoding.html",
+    "section": "Introspection data — Example 1 (timeStamp_t), size = 57",
+    "note": "FULL_WITH_ID (FD) id=1, then a structure FieldDesc. Type codes: 0x80 structure, 0x23 pvLong (int64), 0x22 pvInt (int32). The introspection id (00 01) is a wire-registry detail, not part of the type tree."
+  },
+  "segments": {
+    "introspection_bytes_hex": "FD 00 01 80 0B 74 69 6D 65 53 74 61 6D 70 5F 74 03 10 73 65 63 6F 6E 64 73 50 61 73 74 45 70 6F 63 68 23 0B 6E 61 6E 6F 53 65 63 6F 6E 64 73 22 07 75 73 65 72 54 61 67 22"
+  },
+  "decoded": {
+    "type": {
+      "kind": "struct",
+      "id": "timeStamp_t",
+      "fields": [
+        { "name": "secondsPastEpoch", "type": { "kind": "scalar", "type": "int", "width": 64, "signed": true } },
+        { "name": "nanoSeconds", "type": { "kind": "scalar", "type": "int", "width": 32, "signed": true } },
+        { "name": "userTag", "type": { "kind": "scalar", "type": "int", "width": 32, "signed": true } }
+      ]
+    }
+  }
+}

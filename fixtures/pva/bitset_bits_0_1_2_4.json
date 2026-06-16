@@ -1,0 +1,13 @@
+{
+  "case_id": "pva.bitset.bits_0_1_2_4",
+  "protocol": "pva",
+  "byte_order": "little",
+  "source": {
+    "spec": "pvAccess Data Encoding",
+    "url": "https://docs.epics-controls.org/en/latest/pv-access/Protocol-Encoding.html",
+    "section": "BitSet encoding — { 0, 1, 2, 4 }",
+    "note": "Size 1, byte 0x17 = 0b00010111 = bits 0, 1, 2 and 4 set."
+  },
+  "segments": { "meta_bytes_hex": "01 17" },
+  "decoded": { "meta": { "kind": "bitset", "indices": [0, 1, 2, 4] } }
+}

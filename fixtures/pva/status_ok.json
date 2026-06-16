@@ -1,0 +1,13 @@
+{
+  "case_id": "pva.status.ok",
+  "protocol": "pva",
+  "byte_order": "little",
+  "source": {
+    "spec": "pvAccess Data Encoding",
+    "url": "https://docs.epics-controls.org/en/latest/pv-access/Protocol-Encoding.html",
+    "section": "Status encoding — OK",
+    "note": "0xFF is the OK shortcut: status type OK with no message and no call tree, encoded as a single byte instead of the full type+message+callTree form."
+  },
+  "segments": { "meta_bytes_hex": "FF" },
+  "decoded": { "meta": { "kind": "status", "type": "OK", "message": "", "call_tree": "" } }
+}
