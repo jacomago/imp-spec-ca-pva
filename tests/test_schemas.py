@@ -21,9 +21,15 @@ def adapter_io_schema() -> dict:
     return _load("adapter-io.schema.json")
 
 
-def test_schemas_are_valid_draft2020(normal_form_schema, adapter_io_schema):
+@pytest.fixture(scope="module")
+def fixture_schema() -> dict:
+    return _load("fixture.schema.json")
+
+
+def test_schemas_are_valid_draft2020(normal_form_schema, adapter_io_schema, fixture_schema):
     jsonschema.Draft202012Validator.check_schema(normal_form_schema)
     jsonschema.Draft202012Validator.check_schema(adapter_io_schema)
+    jsonschema.Draft202012Validator.check_schema(fixture_schema)
 
 
 # --- normal form ------------------------------------------------------------
@@ -164,3 +170,60 @@ def test_valid_responses(adapter_io_schema, resp):
 def test_invalid_responses(adapter_io_schema, resp):
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.Draft202012Validator(adapter_io_schema).validate({"response": resp})
+
+
+# --- golden fixtures --------------------------------------------------------
+
+
+def _fixture(decoded, **over):
+    base = {
+        "case_id": "pva.test.case",
+        "protocol": "pva",
+        "byte_order": "little",
+        "source": {"spec": "s", "url": "https://example.org", "section": "x"},
+        "segments": {"meta_bytes_hex": "00"},
+        "decoded": decoded,
+    }
+    base.update(over)
+    return base
+
+
+VALID_FIXTURES = [
+    # introspection-only: type tree, no value
+    _fixture({"type": {"kind": "scalar", "type": "boolean"}}),
+    # full normal-form document
+    _fixture(
+        {"schema_version": "0a", "type": {"kind": "scalar", "type": "int", "width": 32, "signed": True}, "value": 7},
+        segments={"value_bytes_hex": "07000000"},
+    ),
+    # meta: bitset
+    _fixture({"meta": {"kind": "bitset", "indices": [0, 1, 2, 4]}}, segments={"meta_bytes_hex": "01 17"}),
+    # meta: status
+    _fixture({"meta": {"kind": "status", "type": "OK", "message": "", "call_tree": ""}}, segments={"meta_bytes_hex": "FF"}),
+]
+
+INVALID_FIXTURES = [
+    # decoded matches no branch (document missing schema_version but has value)
+    _fixture({"type": {"kind": "scalar", "type": "boolean"}, "value": True}),
+    # bitset meta missing required indices
+    _fixture({"meta": {"kind": "bitset"}}),
+    # status meta missing required message/call_tree
+    _fixture({"meta": {"kind": "status", "type": "OK"}}),
+    # no segments
+    _fixture({"type": {"kind": "scalar", "type": "boolean"}}, segments={}),
+    # bad case_id (uppercase / no dot)
+    _fixture({"type": {"kind": "scalar", "type": "boolean"}}, case_id="Bad"),
+    # unknown protocol
+    _fixture({"type": {"kind": "scalar", "type": "boolean"}}, protocol="http"),
+]
+
+
+@pytest.mark.parametrize("fx", VALID_FIXTURES)
+def test_valid_fixtures(fixture_schema, fx):
+    jsonschema.Draft202012Validator(fixture_schema).validate(fx)
+
+
+@pytest.mark.parametrize("fx", INVALID_FIXTURES)
+def test_invalid_fixtures(fixture_schema, fx):
+    with pytest.raises(jsonschema.ValidationError):
+        jsonschema.Draft202012Validator(fixture_schema).validate(fx)
