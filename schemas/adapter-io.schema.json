@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jacomago/imp-spec-ca-pva/schemas/adapter-io.schema.json",
+  "title": "Adapter stdin/stdout I/O contract",
+  "description": "JSON Lines envelopes exchanged with an adapter. One request per input line, one response (artifact) per output line. A validator targets either #/$defs/request or #/$defs/response.",
+  "type": "object",
+  "properties": {
+    "request": { "$ref": "#/$defs/request" },
+    "response": { "$ref": "#/$defs/response" }
+  },
+  "$defs": {
+    "request": {
+      "type": "object",
+      "required": ["schema_version", "operation", "case_id"],
+      "oneOf": [
+        {
+          "properties": {
+            "schema_version": { "const": "0a" },
+            "operation": { "const": "serialize" },
+            "case_id": { "type": "string" },
+            "type": { "type": "object" },
+            "value": true
+          },
+          "required": ["type", "value"],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "schema_version": { "const": "0a" },
+            "operation": { "const": "deserialize" },
+            "case_id": { "type": "string" },
+            "bytes_hex": { "type": "string", "pattern": "^([0-9a-fA-F]{2})*$" },
+            "type": { "type": ["object", "null"] }
+          },
+          "required": ["bytes_hex"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "response": {
+      "type": "object",
+      "required": ["schema_version", "case_id", "operation", "adapter", "status"],
+      "properties": {
+        "schema_version": { "const": "0a" },
+        "case_id": { "type": "string" },
+        "operation": { "enum": ["serialize", "deserialize"] },
+        "adapter": { "$ref": "#/$defs/adapter" },
+        "status": { "enum": ["ok", "error", "unsupported"] },
+        "result": { "type": ["object", "null"] },
+        "error": { "$ref": "#/$defs/error" }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": { "properties": { "status": { "const": "ok" } } },
+          "then": { "required": ["result"] }
+        },
+        {
+          "if": { "properties": { "status": { "const": "error" } } },
+          "then": { "required": ["error"] }
+        }
+      ]
+    },
+    "adapter": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string" },
+        "extra": { "type": "object" }
+      },
+      "additionalProperties": false
+    },
+    "error": {
+      "type": "object",
+      "required": ["kind", "message"],
+      "properties": {
+        "kind": { "type": "string" },
+        "message": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -71,11 +71,38 @@ The two verdicts per comparison are kept separate:
 
 ## Phases
 
-### Phase 0 — Skeleton + ground truth
-- Repo skeleton; the normal-form sub-spec (contract #2).
-- Encode the spec's hex examples as golden fixtures (timeStamp_t, the 243-byte
-  structure, Status, BitSet). These anchor every later adjudication.
-- One CA adapter, proving the adapter contract end to end.
+Status legend: ✅ done · 🚧 in progress · ⬜ not started
+
+### Phase 0 — Skeleton + ground truth  (🚧 in progress)
+Split into three sequentially-mergeable parts. 0a is a prerequisite for 0b and
+0c; 0b and 0c are independent of each other.
+
+Locked decisions: harness/consumer is pure Python (no EPICS deps); the first CA
+adapter is pyepics/libca, containerized with EPICS base; no CI fan-out or Pages
+yet (that is Phase 1).
+
+**0a — Repo skeleton + normal-form sub-spec (contract #2).  ✅ Done (PR #1).**
+- Repo scaffolding (pure-Python `pyproject.toml`, package layout, README stub).
+- The normal-form sub-spec: f64 hazard (int64/uint64 and out-of-±2^53 values as
+  strings), explicit NaN/±inf, typed scalars (type+width+signedness), and
+  empty-array vs empty-string vs null kept distinct; bytes as hex.
+- JSON Schemas (normal form + the adapter stdin/stdout I/O contract) and the
+  shared `harness/` library (`normalform.py`, `io.py`).
+
+**0b — Golden fixtures (ground truth).  ⬜**
+- Encode the spec's authoritative hex examples as golden fixtures (timeStamp_t,
+  the 243-byte structure, Status, BitSet), each pairing the exact spec hex with
+  a hand-verified normal-form decoding and a cited source. These anchor every
+  later adjudication.
+
+**0c — One CA adapter (pyepics/libca, containerized).  ⬜**
+- An offline DBR `serialize`/`deserialize` adapter proving the adapter contract
+  end to end. libca exposes no offline codec, so the adapter mirrors EPICS base
+  `dbr.h` struct layouts via `ctypes` (no network); pyepics pins the EPICS base
+  version in the provenance record.
+- Dockerfile (EPICS base + pyepics, pinned versions); a small set of
+  hand-verified CA DBR byte anchors + a seed corpus (0b's PVA fixtures do not
+  apply to CA). Fills in the README "how to add an adapter" section.
 
 ### Phase 1 — CA differential harness (the pipeline shakedown)
 CA data is static (DBR), so this is "Kaitai + diff" and is where you get the
@@ -145,6 +172,19 @@ Principles:
   interop is a separate, non-blocking job allowed to be flaky.
 - **Pin and record implementation versions** in every report; differential
   results are only meaningful against known versions.
+- **Two testing layers, two tools.** Conformance comparison is *not* an xUnit
+  job — its output is a 3-valued matrix where byte-mismatches are catalogued
+  degrees of freedom, not failures. So:
+  - **`pytest`** runs conventional unit/fixture tests (normal-form round-trips,
+    schema validation, adapter round-trips) and a thin *gating* layer that reads
+    the engine's results and asserts the subset that must hold (e.g. a promoted
+    adapter must semantic-match the whole corpus).
+  - a **pure-Python conformance engine** (the consumer above) owns the matrix:
+    it reads artifacts, computes both verdicts, and emits JSON results + the
+    static report. It is decoupled from pass/fail so reporting never breaks
+    because a test failed.
+  - Fixtures stay **hand-authored from the spec hex** — no auto-snapshot tools
+    (`syrupy` et al.), which would let an implementation's output define truth.
 
 The report headlines **disagreements**: a matrix of corpus-case ×
 implementation × {semantic-match, byte-identical, fail}, with divergences
@@ -163,3 +203,22 @@ independent of the spec.
 | Layer 3 sprawl swallowing the project | Layer 3 explicitly off critical path; hosted by real impls; formal version is stretch |
 | "Reverse the tests" requiring a rewrite | Pluggable oracle — direction is an oracle swap, not a rewrite |
 | Corpus underfeeding the harness | Treat corpus as the deliverable; hand-authored first, property-based later |
+
+---
+
+## References — authoritative specs
+
+These are the sources the harness conforms to. Fixtures and ambiguity reports
+cite the relevant one.
+
+**Channel Access (CA)** — the older protocol; data is the static **DBR** family
+(`DBR_STRING/SHORT/FLOAT/ENUM/CHAR/LONG/DOUBLE`).
+- [Channel Access Protocol Specification](https://docs.epics-controls.org/en/latest/internal/ca_protocol.html)
+
+**pvAccess (PVA)** — the EPICS 7 protocol; data is **pvData**: a self-describing
+`FieldDesc` type grammar plus a type-directed value codec, with conventional
+shapes defined by the Normative Types.
+- [pvAccess Protocol Specification](https://docs.epics-controls.org/en/latest/pv-access/protocol.html)
+- [pvAccess Data Encoding](https://docs.epics-controls.org/en/latest/pv-access/Protocol-Encoding.html) — Size, scalars, `FieldDesc`, value codec (the pvData layers 0–2 this project covers)
+- [EPICS V4 Normative Types](https://docs.epics-controls.org/en/latest/pv-access/Normative-Types-Specification.html)
+- [Protocol Messages Specification](https://docs.epics-controls.org/en/latest/pv-access/Protocol-Messages.html) — layer 3, off the critical path
