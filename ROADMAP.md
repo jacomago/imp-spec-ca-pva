@@ -126,12 +126,29 @@ whole pipeline working on the *easy* protocol.
 ### Phase 3 — PVA data harness (the hard corpus work)
 This is where the real difficulty lives — treat it as its own effort, not
 "same as CA."
+- **Prerequisite — finish union/variant in the normal form (see below).**
 - PVA adapters via pvxs and core-pva using their **offline** serialize/
   deserialize (sidesteps the stateful connection/registry-id problem entirely).
 - Grow the corpus toward the edge cases: null struct-array elements (presence
   byte), variant union wrapping a structure, `Size` 253/254 boundary, bounded
   array at and over bound, partial-structure BitSet updates, unsigned extremes,
   multi-byte UTF-8, both endiannesses.
+
+> **Pre-Phase-3 prerequisite — union/variant value support.** The normal-form
+> *grammar* already reserves `union` and `variant` type nodes
+> (`schemas/normal-form.schema.json`, documented in `docs/normal-form.md`), but
+> the `0a` Python implementation does **not** model them: `type_from_json`
+> rejects any kind beyond scalar/array/struct, and `encode_value`/`decode_value`
+> have no union/variant case. A fixture using a union therefore passes JSON
+> Schema validation but fails the loader. Phase 3's corpus explicitly needs
+> "variant union wrapping a structure," so before that corpus can be authored
+> the type tree and value walker must gain: (a) `type_from_json` parsing of
+> `union`/`variant`; (b) a value encoding for a union (selected member +
+> value) and a variant (a self-describing `{type, value}` cell); and (c) a
+> `schema_version` bump past `0a` once the value-tree shape is fixed. This is a
+> discrete, self-contained unit of work that gates Phase 3 (and the deferred
+> 0b `exampleStructure` fixture if its transcription turns out to contain a
+> union), and is not otherwise on any phase's checklist.
 
 ### Phase 4 — PVA layers 0–2 as an adapter
 - Kaitai for layers 0–1 (FieldDesc grammar) + the value walker for layer 2
