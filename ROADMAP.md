@@ -74,12 +74,12 @@ The two verdicts per comparison are kept separate:
 Status legend: ✅ done · 🚧 in progress · ⬜ not started
 
 ### Phase 0 — Skeleton + ground truth  (🚧 in progress)
-Split into three sequentially-mergeable parts. 0a is a prerequisite for 0b and
-0c; 0b and 0c are independent of each other.
+Three sequentially-mergeable parts: 0a (a prerequisite for both), then 0b and 0c,
+which are independent of each other. 0c is itself split into 0c-1…0c-3 (below).
 
 Locked decisions: harness/consumer is pure Python (no EPICS deps); the first CA
-adapter is pyepics/libca, containerized with EPICS base; no CI fan-out or Pages
-yet (that is Phase 1).
+adapter is pyepics/libca, containerized with EPICS base + pyepics from conda-forge;
+no CI fan-out or Pages yet (that is Phase 1).
 
 **0a — Repo skeleton + normal-form sub-spec (contract #2).  ✅ Done (PR #1).**
 - Repo scaffolding (pure-Python `pyproject.toml`, package layout, README stub).
@@ -89,7 +89,7 @@ yet (that is Phase 1).
 - JSON Schemas (normal form + the adapter stdin/stdout I/O contract) and the
   shared `harness/` library (`normalform.py`, `io.py`).
 
-**0b — Golden fixtures (ground truth).  ✅ Done.**
+**0b — Golden fixtures (ground truth).  ✅ Done (PR #2).**
 - Encode the spec's authoritative hex examples as golden fixtures, each pairing
   the exact spec hex with a hand-verified decoding and a cited source. These
   anchor every later adjudication (oracle v1).
@@ -103,13 +103,35 @@ yet (that is Phase 1).
   example. Tracked in `docs/fixtures.md`.
 
 **0c — One CA adapter (pyepics/libca, containerized).  ⬜**
-- An offline DBR `serialize`/`deserialize` adapter proving the adapter contract
-  end to end. libca exposes no offline codec, so the adapter mirrors EPICS base
-  `dbr.h` struct layouts via `ctypes` (no network); pyepics pins the EPICS base
-  version in the provenance record.
-- Dockerfile (EPICS base + pyepics, pinned versions); a small set of
-  hand-verified CA DBR byte anchors + a seed corpus (0b's PVA fixtures do not
-  apply to CA). Fills in the README "how to add an adapter" section.
+Proves the adapter contract end to end on CA's static DBR data. libca exposes no
+offline codec, so the adapter mirrors EPICS base `dbr.h` struct layouts via
+`ctypes` (no network). Split into three sequentially-mergeable parts: 0c-1 is a
+prerequisite for 0c-2, and 0c-3 depends on 0c-2.
+
+- **0c-1 — CA-DBR → normal-form mapping + CA golden fixtures.  ⬜** Pure Python,
+  no EPICS. Pin the CA-DBR → type-tree mapping in `docs/normal-form.md`: the seven
+  base types (incl. `DBR_ENUM` → the raw enum index) and the `DBR_STS_*` /
+  `DBR_TIME_*` metadata variants (status/severity/timestamp as struct fields; the
+  `RISC_pad` alignment bytes are a byte-identical degree of freedom, not value-tree
+  fields). Add the hand-verified CA DBR byte anchors as golden fixtures under
+  `fixtures/ca/` (`documentDecoded` shape, `protocol:"ca"`, `byte_order:"big"`).
+  No schema or `normalform` change is needed — the existing `tests/test_golden.py`
+  covers them in CI. This extends the golden-fixture oracle (v1) to CA and unblocks
+  the adapter.
+- **0c-2 — CA DBR offline codec adapter.  ⬜** The first concrete adapter, under
+  `adapters/ca/`: `ctypes.BigEndianStructure` mirrors of `dbr.h` (including the
+  explicit `RISC_pad` fields), a bijective DBR-code ↔ normal-form `TypeNode`
+  mapping, `serialize`/`deserialize` driven by `harness.io.run_adapter`, and a seed
+  corpus (0b's PVA fixtures do not apply to CA). Hard-depends pyepics, used to pin
+  the EPICS base version in the provenance record; the codec itself is pure
+  `ctypes` (no network).
+- **0c-3 — Containerize + provenance + "how to add an adapter".  ⬜** Dockerfile
+  on a miniforge base installing `epics-base` + pyepics from **conda-forge**
+  (pinned, and recorded in the adapter's provenance `extra`) — not built from
+  source. Container-run tests prove the adapter reproduces every 0c-1 fixture
+  (serialize → bytes match, deserialize → value match) and round-trips; these run
+  in the image, not the repo's pure-Python CI. Fills in the README "how to add an
+  adapter" section, using this adapter as the worked example.
 
 ### Phase 1 — CA differential harness (the pipeline shakedown)
 CA data is static (DBR), so this is "Kaitai + diff" and is where you get the
@@ -129,6 +151,9 @@ This is where the real difficulty lives — treat it as its own effort, not
 - **Prerequisite — finish union/variant in the normal form (see below).**
 - PVA adapters via pvxs and core-pva using their **offline** serialize/
   deserialize (sidesteps the stateful connection/registry-id problem entirely).
+  This is the first **Java** dependency: the core-pva adapter container pulls
+  core-pva from Maven / Phoebus releases (conda-forge supplying only the JVM), per
+  the dependency-sourcing principle in the CI design.
 - Grow the corpus toward the edge cases: null struct-array elements (presence
   byte), variant union wrapping a structure, `Size` 253/254 boundary, bounded
   array at and over bound, partial-structure BitSet updates, unsigned extremes,
@@ -190,6 +215,16 @@ Fan-out producers → artifacts → one dependency-light consumer.
 Principles:
 - **Containerize implementations; never build EPICS base from scratch per run.**
   Prebuild and publish images (epics-base+pvxs; Phoebus core-pva; etc.).
+- **Use conda (conda-forge) for Python and C/C++ dependencies where possible.**
+  EPICS base, pvxs, pyepics and friends ship as conda-forge packages, so adapter
+  images install pinned binaries instead of compiling from source — faster,
+  reproducible, and the pinned package versions feed straight into the provenance
+  record. The pure-Python harness core stays pip/`pyproject.toml` with no EPICS
+  deps; conda is for the adapter containers. Where conda is not the idiomatic
+  source, use the ecosystem's package manager instead — e.g. the Java `core-pva`
+  adapter (Phase 3) pulls core-pva from Maven / Phoebus releases (conda-forge only
+  supplying the JVM, `openjdk`). Whatever the source, pin the versions and record
+  them in the adapter's provenance.
 - **The publish path has zero toolchain dependencies** — the consumer is plain
   Python reading files, so reporting never breaks because a C++ build broke.
 - **No live networking in blocking CI** — all data tests are offline. Live
