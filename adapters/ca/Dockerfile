@@ -24,6 +24,18 @@ RUN mamba install -y -n base -c conda-forge \
         "pyepics=${PYEPICS_VERSION}" \
     && mamba clean -afy
 
+# conda-forge epics-base ships its shared libs under an arch-specific dir that
+# isn't on the default loader path, and pyepics' bundled stub libca doesn't
+# cover aarch64. Symlink the host-arch EPICS libs into the conda lib dir and
+# point pyepics straight at libca, so loading is arch-independent (x86_64 in CI,
+# aarch64 on Apple silicon).
+RUN set -eux; \
+    archdir="$(dirname "$(find /opt/conda/epics/lib -path "*$(uname -m)*/libca.so" | head -1)")"; \
+    ln -sf "$archdir"/*.so* /opt/conda/lib/
+ENV PYEPICS_LIBCA=/opt/conda/lib/libca.so \
+    LD_LIBRARY_PATH=/opt/conda/lib \
+    CA_ADAPTER_EPICS_BASE=${EPICS_BASE_VERSION}
+
 WORKDIR /app
 
 # Just the bits the adapter and its tests read: the harness core, the CA adapter,

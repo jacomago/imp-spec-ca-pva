@@ -129,9 +129,10 @@ prerequisite for 0c-2, and 0c-3 depends on 0c-2.
   0c-3 container.
 - **0c-3 — Containerize + provenance + "how to add an adapter".  ✅** Dockerfile
   (`adapters/ca/Dockerfile`) on a miniforge base installing pinned `epics-base` +
-  pyepics from **conda-forge** — not built from source; both versions are read
-  back into the adapter's provenance `extra` at runtime (`adapter.py`
-  `_provenance` / `_epics_base_version`). Container-run tests
+  pyepics from **conda-forge** — not built from source; the pinned versions are
+  read back into the adapter's provenance `extra` at runtime (`adapter.py`
+  `_provenance`: `pyepics`, `libca` via `ca_version()`, and the pinned
+  `epics_base`). Container-run tests
   (`tests/test_ca_epics.py`, guarded by `importorskip("epics")` so they skip in
   pure-Python CI) reproduce every 0c-1 fixture (serialize → bytes match,
   deserialize → value match) **and** cross-check the `ctypes` DBR layouts against

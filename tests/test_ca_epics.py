@@ -107,4 +107,5 @@ def test_provenance_pins_real_versions():
     assert extra is not None
     assert extra["codec"] == "pure-ctypes"
     assert extra["pyepics"], "pyepics version should be pinned in the container"
-    assert extra["epics_base"], "epics-base/libca version should be pinned in the container"
+    assert extra["libca"], "libca (ca_version) should be reported in the container"
+    assert extra["epics_base"], "epics-base version should be pinned in the container"

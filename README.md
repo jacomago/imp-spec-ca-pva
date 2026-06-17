@@ -121,8 +121,10 @@ type model), [`adapter.py`](adapters/ca/adapter.py) (`handler` + provenance), an
 **3. Record provenance.** Set `AdapterInfo.extra` to whatever pins the result —
 library versions, codec notes. The differential report is only meaningful against
 known versions. The CA adapter's codec is pure `ctypes`, so it records
-`{"codec": "pure-ctypes", "pyepics": …, "epics_base": …}`; the version fields are
-read best-effort and are `null` outside the container.
+`{"codec": "pure-ctypes", "pyepics": …, "libca": …, "epics_base": …}`; the version
+fields are read best-effort (pyepics from the package, `libca` from
+`ca_version()`, `epics_base` from the container's pinned build arg) and are `null`
+outside the container.
 
 **4. Containerize with pinned, prebuilt dependencies.** Per the CI design, install
 implementations from a package manager (conda-forge here) — never build EPICS from
