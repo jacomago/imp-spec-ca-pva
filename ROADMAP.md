@@ -118,13 +118,15 @@ prerequisite for 0c-2, and 0c-3 depends on 0c-2.
   No schema or `normalform` change is needed — the existing `tests/test_golden.py`
   covers them in CI. This extends the golden-fixture oracle (v1) to CA and unblocks
   the adapter.
-- **0c-2 — CA DBR offline codec adapter.  ⬜** The first concrete adapter, under
+- **0c-2 — CA DBR offline codec adapter.  ✅** The first concrete adapter, under
   `adapters/ca/`: `ctypes.BigEndianStructure` mirrors of `dbr.h` (including the
   explicit `RISC_pad` fields), a bijective DBR-code ↔ normal-form `TypeNode`
   mapping, `serialize`/`deserialize` driven by `harness.io.run_adapter`, and a seed
-  corpus (0b's PVA fixtures do not apply to CA). Hard-depends pyepics, used to pin
-  the EPICS base version in the provenance record; the codec itself is pure
-  `ctypes` (no network).
+  corpus (`adapters/ca/corpus/seed.jsonl`; 0b's PVA fixtures do not apply to CA).
+  The codec is pure `ctypes` (no network, no libca) and tested in pure-Python CI
+  against every 0c-1 fixture. pyepics is an optional dependency read only for the
+  provenance record (`extra`); recorded as `null` here, pinned for real in the
+  0c-3 container.
 - **0c-3 — Containerize + provenance + "how to add an adapter".  ⬜** Dockerfile
   on a miniforge base installing `epics-base` + pyepics from **conda-forge**
   (pinned, and recorded in the adapter's provenance `extra`) — not built from
