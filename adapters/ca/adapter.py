@@ -9,6 +9,7 @@ is captured when this runs in its conda-forge container (Phase 0c-3).
 
 from __future__ import annotations
 
+import ctypes
 from typing import Any
 
 from harness import io
@@ -20,10 +21,25 @@ ADAPTER_NAME = "ca-dbr"
 ADAPTER_VERSION = "0.0.0"
 
 
+def _epics_base_version() -> str | None:
+    """Best-effort EPICS base / libca version string, read via pyepics. Returns
+    ``None`` when libca is unavailable (e.g. pure-Python CI). Loading libca is
+    offline (no CA connection is made), and any failure degrades to ``None``."""
+    try:
+        from epics import ca  # type: ignore
+
+        libca = ca.initialize_libca()
+        libca.ca_version.restype = ctypes.c_char_p
+        return libca.ca_version().decode()
+    except Exception:  # noqa: BLE001 - any failure means "unavailable"
+        return None
+
+
 def _provenance() -> dict[str, Any]:
     """Best-effort EPICS provenance. pyepics (and libca) are not installed in
     the pure-Python harness, so a missing import is expected and recorded as
-    ``None`` rather than raised — 0c-3 fills the real pin in the container."""
+    ``None`` rather than raised. The conda-forge container (0c-3) supplies the
+    real pins — ``pyepics`` and ``epics_base`` then carry concrete versions."""
     extra: dict[str, Any] = {"codec": "pure-ctypes"}
     try:
         import epics  # type: ignore
@@ -31,6 +47,7 @@ def _provenance() -> dict[str, Any]:
         extra["pyepics"] = None
     else:
         extra["pyepics"] = getattr(epics, "__version__", None)
+    extra["epics_base"] = _epics_base_version()
     return extra
 
 
