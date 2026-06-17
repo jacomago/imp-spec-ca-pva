@@ -1,0 +1,36 @@
+name: CA adapter container
+
+# The real-EPICS verification for the CA DBR adapter. Separate from the blocking
+# pure-Python `ci.yml`: it builds the conda-forge adapter image (epics-base +
+# pyepics) and runs the in-image test suite, which activates the libca
+# cross-check that `ci.yml` skips. A single image build — not Phase 1's CI
+# fan-out — kept off the blocking path.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "adapters/ca/**"
+      - "src/harness/**"
+      - "fixtures/ca/**"
+      - "schemas/**"
+      - "tests/test_ca_epics.py"
+      - ".github/workflows/ca-container.yml"
+  pull_request:
+    paths:
+      - "adapters/ca/**"
+      - "src/harness/**"
+      - "fixtures/ca/**"
+      - "schemas/**"
+      - "tests/test_ca_epics.py"
+      - ".github/workflows/ca-container.yml"
+
+jobs:
+  container-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the CA adapter image
+        run: docker build -f adapters/ca/Dockerfile -t ca-adapter .
+      - name: Run the in-image verification (libca cross-check + golden fixtures)
+        run: docker run --rm --entrypoint pytest ca-adapter -q

@@ -127,13 +127,20 @@ prerequisite for 0c-2, and 0c-3 depends on 0c-2.
   against every 0c-1 fixture. pyepics is an optional dependency read only for the
   provenance record (`extra`); recorded as `null` here, pinned for real in the
   0c-3 container.
-- **0c-3 — Containerize + provenance + "how to add an adapter".  ⬜** Dockerfile
-  on a miniforge base installing `epics-base` + pyepics from **conda-forge**
-  (pinned, and recorded in the adapter's provenance `extra`) — not built from
-  source. Container-run tests prove the adapter reproduces every 0c-1 fixture
-  (serialize → bytes match, deserialize → value match) and round-trips; these run
-  in the image, not the repo's pure-Python CI. Fills in the README "how to add an
-  adapter" section, using this adapter as the worked example.
+- **0c-3 — Containerize + provenance + "how to add an adapter".  ✅** Dockerfile
+  (`adapters/ca/Dockerfile`) on a miniforge base installing pinned `epics-base` +
+  pyepics from **conda-forge** — not built from source; the pinned versions are
+  read back into the adapter's provenance `extra` at runtime (`adapter.py`
+  `_provenance`: `pyepics`, `libca` via `ca_version()`, and the pinned
+  `epics_base`). Container-run tests
+  (`tests/test_ca_epics.py`, guarded by `importorskip("epics")` so they skip in
+  pure-Python CI) reproduce every 0c-1 fixture (serialize → bytes match,
+  deserialize → value match) **and** cross-check the `ctypes` DBR layouts against
+  libca's own `dbr_size` table — the "machine-verified against real EPICS" the CA
+  fixtures promise. They run in the image via a separate non-blocking workflow
+  (`.github/workflows/ca-container.yml`), not the blocking pure-Python CI. The
+  README "how to add an adapter" section is filled in using this adapter as the
+  worked example.
 
 ### Phase 1 — CA differential harness (the pipeline shakedown)
 CA data is static (DBR), so this is "Kaitai + diff" and is where you get the

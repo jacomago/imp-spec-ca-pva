@@ -53,6 +53,7 @@ Everything plugs into three stable contracts:
 
 ```
 src/harness/      pure-Python library (normalform.py, io.py, golden.py)
+adapters/         containerized implementations (adapters/ca/ — the CA DBR codec)
 schemas/          JSON Schemas: normal form + adapter I/O + golden fixtures
 fixtures/         golden fixtures — spec hex + hand-verified decoding (oracle v1)
 docs/             sub-specs (normal-form.md, fixtures.md)
@@ -77,11 +78,76 @@ pytest -q
 
 ## How to add an adapter
 
-> _Stub — filled in by Phase 0c (the first CA adapter, pyepics/libca,
-> containerized)._ An adapter reads JSON Lines requests on stdin and writes JSON
-> Lines responses on stdout. Implement a `handler(request) -> Response` and run
-> it through [`harness.io.run_adapter`](src/harness/io.py), reporting decoded
-> values in the [normal form](docs/normal-form.md) and serialized bytes as hex.
+An adapter is one participant in the [adapter contract](#the-three-contracts):
+it reads JSON Lines **requests** on stdin and writes JSON Lines **responses** on
+stdout, decoding values into the [normal form](docs/normal-form.md) and recording
+serialized bytes as hex. The harness never imports an adapter — it runs each one
+in its own container and talks over stdin/stdout — so adding an implementation is
+purely additive.
+
+The CA DBR adapter ([`adapters/ca/`](adapters/ca/)) is the worked example.
+
+**1. Implement a `handler`.** Map a [`harness.io.Request`](src/harness/io.py) to a
+`Response` and let [`harness.io.run_adapter`](src/harness/io.py) drive the
+stdin/stdout loop (it validates every request and response against
+[`schemas/adapter-io.schema.json`](schemas/adapter-io.schema.json) and turns any
+exception into a clean `error` response):
+
+```python
+# adapters/ca/adapter.py (abridged)
+def handler(request: io.Request) -> io.Response:
+    if request.operation == "serialize":
+        node = type_from_json(request.type)
+        data = codec.serialize(node, io.decode_value(node, request.value))
+        result = io.serialize_result(data.hex())
+    else:  # deserialize
+        node = type_from_json(request.type)
+        native = codec.deserialize(node, bytes.fromhex(request.bytes_hex or ""))
+        result = io.deserialize_result(node.to_json(), io.encode_value(node, native))
+    return io.Response(request.case_id, request.operation, ADAPTER, result=result)
+
+def main() -> None:
+    io.run_adapter(ADAPTER, handler)
+```
+
+**2. Structure the package.** The CA adapter keeps the codec separate from the
+wiring: [`codec.py`](adapters/ca/codec.py) (serialize/deserialize),
+[`dbr.py`](adapters/ca/dbr.py) and [`mapping.py`](adapters/ca/mapping.py) (the
+type model), [`adapter.py`](adapters/ca/adapter.py) (`handler` + provenance), and
+[`__main__.py`](adapters/ca/__main__.py) so the container entry point is
+`python -m ca`. Ship a small seed corpus too
+([`corpus/seed.jsonl`](adapters/ca/corpus/seed.jsonl)).
+
+**3. Record provenance.** Set `AdapterInfo.extra` to whatever pins the result —
+library versions, codec notes. The differential report is only meaningful against
+known versions. The CA adapter's codec is pure `ctypes`, so it records
+`{"codec": "pure-ctypes", "pyepics": …, "libca": …, "epics_base": …}`; the version
+fields are read best-effort (pyepics from the package, `libca` from
+`ca_version()`, `epics_base` from the container's pinned build arg) and are `null`
+outside the container.
+
+**4. Containerize with pinned, prebuilt dependencies.** Per the CI design, install
+implementations from a package manager (conda-forge here) — never build EPICS from
+source per run — and pin the versions.
+[`adapters/ca/Dockerfile`](adapters/ca/Dockerfile) installs `epics-base` +
+`pyepics` from conda-forge on a miniforge base, and its `ENTRYPOINT` is the adapter
+itself:
+
+```sh
+docker build -f adapters/ca/Dockerfile -t ca-adapter .
+docker run --rm -i ca-adapter < adapters/ca/corpus/seed.jsonl   # corpus -> artifacts
+```
+
+**5. Verify against the golden fixtures.** The pure-`ctypes` codec is tested in
+the repo's pure-Python CI ([`tests/test_ca_adapter.py`](tests/test_ca_adapter.py))
+against every CA fixture: serialize → bytes match, deserialize → value match, and
+round-trip. Checks that need the real library live in
+[`tests/test_ca_epics.py`](tests/test_ca_epics.py), guarded by
+`pytest.importorskip("epics")` so they **skip** in pure-Python CI and **run** in
+the container — where they also cross-check the `ctypes` layouts against libca's
+own `dbr_size` table. The container runs the whole suite via
+`docker run --rm --entrypoint pytest ca-adapter -q` (the non-blocking
+[`ca-container.yml`](.github/workflows/ca-container.yml) workflow).
 
 ## References
 
