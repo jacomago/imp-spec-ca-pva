@@ -18,6 +18,12 @@ dependencies = [
 dev = [
     "pytest>=7.4",
 ]
+# The CA adapter's codec is pure ctypes (no EPICS needed). pyepics is optional
+# and read only for the provenance record; it is installed in the adapter's
+# conda-forge container (Phase 0c-3), not in the pure-Python harness CI.
+ca = [
+    "pyepics",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/harness"]
@@ -25,3 +31,6 @@ packages = ["src/harness"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+# Make the out-of-tree adapter packages importable (e.g. `import ca`) without
+# installing them; the harness core itself stays under src/.
+pythonpath = ["adapters"]
